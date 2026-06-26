@@ -5,6 +5,8 @@
 #include "utils.h"
 
 static const char *TAG = "REALTIME";
+#define LED_PIN GPIO_NUM_15
+#define BUTTON_PIN GPIO_NUM_12
 
 // Shared data structure and its Mutex for thread-safe access
 typedef struct {
@@ -35,7 +37,14 @@ void fall_detection_task(void *pvParameters) {
         // Block indefinitely until the hardware interrupt gives the semaphore
         if (xSemaphoreTake(fall_semaphore, portMAX_DELAY) == pdTRUE) {
             ESP_LOGE(TAG, "EMERGENCY: FALL DETECTED VIA HARDWARE INTERRUPT!");
-            // Trigger alarms, buzzers, send Wi-Fi SOS, etc.
+            gpio_set_level(LED_PIN, 1); // Turn on the indicator LED to signal emergency
+            
+            // Clear the MPU6050 interrupt flag so it can trigger again
+            imu_clear_interrupt();
+            
+            // Keep the LED on for 1 second, then turn it off
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            gpio_set_level(LED_PIN, 0); 
         }
     }
 }
@@ -47,16 +56,25 @@ void imu_task(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t xFrequency = pdMS_TO_TICKS(10);
 
+    static bool last_btn_state = false;
+
     while (1) {
-        imu_read_data();
-        imu_calculate_dead_reckoning();
+        bool current_btn = (gpio_get_level(BUTTON_PIN) == 1);
+        if (current_btn && !last_btn_state) {
+            imu_reset_data();
+        }
+        last_btn_state = current_btn;
+
+        if (imu_read_data()) {
+            imu_calculate_dead_reckoning();
+        }
         
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
 
 // --- Low Priority: Environment Task ---
-// Priority 2. The DHT22 blocks for 25ms+, but since it has a low priority, the RTOS
+// Priority 2. The DHT11 blocks for 25ms+, but since it has a low priority, the RTOS
 // will automatically pause it to let the IMU task run exactly when it needs to.
 void environment_task(void *pvParameters) {
     while (1) {
@@ -101,13 +119,23 @@ void display_task(void *pvParameters) {
 void serial_task(void *pvParameters) {
     while (1) {
         serial_send_path_data();
-        vTaskDelay(pdMS_TO_TICKS(500)); // Stream data to PC at 2Hz
+        vTaskDelay(pdMS_TO_TICKS(40)); // Stream data to PC at 2Hz
     }
 }
 
 void app_main(void) {
+    // --- FLASHING FIX ---
+    // Wait 2 seconds before starting. This keeps the USB port perfectly silent on boot,
+    // allowing esptool.py to cleanly software-reset the board without you needing to press any buttons!
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
     ESP_LOGI(TAG, "--- FreeRTOS Real-Time Setup ---");
     
+    // Setup Indicator LED & Button
+    setup_gpio(LED_PIN, GPIO_MODE_OUTPUT, false, false);
+    gpio_set_level(LED_PIN, 0); // Initially OFF
+    setup_gpio(BUTTON_PIN, GPIO_MODE_INPUT, false, true); // No pull-up, enable pull-down
+
     debug_sensor_init();
     imu_init();
     oled_init();
