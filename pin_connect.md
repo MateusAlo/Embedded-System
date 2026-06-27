@@ -7,7 +7,7 @@ This document lists the exact physical wiring connections for your Wemos/LOLIN *
 > Wiring errors can permanently damage (burn) your ESP32-S2 or sensors. Follow the safety tips and wire-by-wire checklists below.
 > 
 > * **Never connect 5V (VBUS) to the 3.3V pins of sensors** unless they are explicitly rated for it.
-> * **Always use current-limiting resistors** for the LED and LDR as specified below.
+> * **Always use current-limiting resistors** for the LED or other extra components as specified below.
 > * **Do not let bare wires or resistor legs touch each other**, as this causes short circuits.
 
 ---
@@ -20,34 +20,25 @@ Follow this checklist wire-by-wire to connect your components safely to your S2 
 Since multiple components need **3.3V** and **GND**, it is best to use your breadboard power rails:
 * [ ] Run a wire from the **S2 Mini 3V3 Pin** to the **Red (+) Breadboard Rail**. (This is your 3.3V power source).
 * [ ] Run a wire from the **S2 Mini GND Pin** to the **Blue/Black (-) Breadboard Rail**. (This is your Ground source).
+* [ ] Dont forget to pay attention to the GND and VCC line break points
 
 ---
 
 ### 2. SSD1306 OLED Display (4 pins)
 * [ ] Connect **OLED VCC** to the **Red (+) Breadboard Rail (3.3V)**.
 * [ ] Connect **OLED GND** to the **Blue/Black (-) Breadboard Rail (GND)**.
-* [ ] Connect **OLED SCL** to **S2 Mini Pin 35 (SCL)**.
-* [ ] Connect **OLED SDA** to **S2 Mini Pin 33 (SDA)**.
+* [ ] Connect **OLED SCL** to **S2 Mini Pin 9 (SCL)**.
+* [ ] Connect **OLED SDA** to **S2 Mini Pin 8 (SDA)**.
 
 ---
 
 ### 3. MPU6050 IMU Module (8 pins - only 5 used)
 * [ ] Connect **MPU6050 VCC** to the **Red (+) Breadboard Rail (3.3V)**. *(Warning: Do NOT connect to 5V!)*
 * [ ] Connect **MPU6050 GND** to the **Blue/Black (-) Breadboard Rail (GND)**.
-* [ ] Connect **MPU6050 SCL** to **S2 Mini Pin 35 (SCL)**.
-* [ ] Connect **MPU6050 SDA** to **S2 Mini Pin 33 (SDA)**.
+* [ ] Connect **MPU6050 SCL** to **S2 Mini Pin 9 (SCL)**.
+* [ ] Connect **MPU6050 SDA** to **S2 Mini Pin 8 (SDA)**.
 * [ ] Connect **MPU6050 INT** to **S2 Mini Pin 14**.
 * *Leave AD0, XDA, and XCL pins empty and unconnected.*
-
----
-
-### 4. Photoresistor (LDR) Analog Light Sensor
-*Requires a **voltage divider** circuit to read analog changes and protect the pins.*
-* [ ] Connect **Leg 1** of the Photoresistor to the **Red (+) Breadboard Rail (3.3V)**.
-* [ ] Connect **Leg 2** of the Photoresistor directly to **S2 Mini Pin 1 (ADC1 CH0)**.
-* [ ] Connect a physical **$10\text{k}\Omega$ fixed resistor** (Brown-Black-Orange-Gold bands) between **S2 Mini Pin 1** (where Leg 2 of the LDR is connected) and the **Blue/Black (-) Breadboard Rail (GND)**.
-* > [!CAUTION]
-  > **DO NOT** connect the photoresistor directly between 3.3V and GND without the $10\text{k}\Omega$ resistor! This will cause a short circuit when exposed to bright light and can burn the S2 Mini pin.
 
 ---
 
@@ -111,14 +102,12 @@ graph TD
     VCC_RAIL --> OLED_VCC["OLED VCC"]
     VCC_RAIL --> IMU_VCC["MPU6050 VCC"]
     VCC_RAIL --> DHT_VCC["DHT11 Pin 1 (VCC)"]
-    VCC_RAIL --> LDR_VCC["LDR Photoresistor Pin 1"]
 
     GND_RAIL --> OLED_GND["OLED GND"]
     GND_RAIL --> IMU_GND["MPU6050 GND"]
     GND_RAIL --> DHT_GND["DHT11 Pin 4 (GND)"]
     GND_RAIL --> LED_GND["LED Cathode (-)"]
     GND_RAIL --> BTN_GND["Button Pin 2"]
-    GND_RAIL --> LDR_GND["10kΩ Fixed Resistor GND Pin"]
 ```
 
 ---
@@ -129,8 +118,8 @@ Both the OLED display and the MPU6050 IMU sensor share the exact same I2C SDA an
 ```mermaid
 graph TD
     subgraph S2Mini_I2C ["S2 Mini I2C Interface"]
-        G35["GPIO 35 (SCL Clock)"]
-        G33["GPIO 33 (SDA Data)"]
+        G35["GPIO 9 (SCL Clock)"]
+        G33["GPIO 8 (SDA Data)"]
     end
 
     subgraph OLED_Display ["SSD1306 OLED Screen"]
@@ -152,7 +141,7 @@ graph TD
 
 ---
 
-### Diagram C: Dedicated GPIO Pin Connections (LED, Button, LDR, DHT11)
+### Diagram C: Dedicated GPIO Pin Connections (LED, Button, DHT11)
 These components connect directly to their own dedicated GPIO pins on the S2 Mini.
 
 ```mermaid
@@ -162,7 +151,6 @@ graph TD
         G14["GPIO 14 (IMU INT)"]
         G15["GPIO 15 (Onboard/Ext LED)"]
         G12["GPIO 12 (Button Input)"]
-        G1["GPIO 1 (ADC1 CH0 LDR)"]
     end
 
     subgraph Peripherals ["Sensor / Indicator Pins"]
@@ -170,14 +158,12 @@ graph TD
         IMU_INT["MPU6050 INT Pin"]
         LED["LED Anode (+) via 220Ω Resistor"]
         BTN["Button Pin 1"]
-        LDR["LDR Pin 2 / 10kΩ Resistor Junction"]
     end
 
     G2 --> DHT11
     G14 --> IMU_INT
     G15 --> LED
     G12 --> BTN
-    G1 --> LDR
 ```
 
 ---
@@ -188,15 +174,13 @@ graph TD
 | :--- | :--- | :--- | :--- |
 | **OLED** | VCC | 3.3V Rail | **Must be 3.3V.** |
 | | GND | GND Rail | Connect directly. |
-| | SCL | GPIO 35 | Connect directly. |
-| | SDA | GPIO 33 | Connect directly. |
+| | SCL | GPIO 9 | Connect directly. |
+| | SDA | GPIO 8 | Connect directly. |
 | **MPU6050 IMU** | VCC | 3.3V Rail | **Must be 3.3V. Do not connect to 5V.** |
 | | GND | GND Rail | Connect directly. |
-| | SCL | GPIO 35 | Connect directly. |
-| | SDA | GPIO 33 | Connect directly. |
+| | SCL | GPIO 9 | Connect directly. |
+| | SDA | GPIO 8 | Connect directly. |
 | | INT | GPIO 14 | Connect directly. |
-| **Photoresistor (LDR)** | Pin 1 | 3.3V Rail | Connect directly to 3.3V. |
-| | Pin 2 | GPIO 1 | **Must connect to GPIO 1 AND GND via a $10\text{k}\Omega$ resistor.** |
 | **DHT11 Sensor** | Pin 1 (VCC) | 3.3V Rail | Connect directly. |
 | | Pin 2 (DATA) | GPIO 2 | **Requires a physical $4.7\text{k}\Omega - 10\text{k}\Omega$ pull-up to 3.3V** (if bare sensor). |
 | | Pin 4 (GND) | GND Rail | Connect directly. |
@@ -205,21 +189,3 @@ graph TD
 | **Push Button** | Pin 1 | GPIO 12 | Connect directly. |
 | | Pin 2 | GND Rail | Connect directly. |
 
----
-
-## Part 4: Safety Rules for Using an External Power Supply
-
-If you choose to use an **external 3.3V power supply** (instead of powering everything from the S2 Mini's 3.3V pin), you must strictly follow these rules to avoid short circuits and frying your components:
-
-### 1. Connect Common Grounds (GND)
-* **Rule**: You **MUST** connect the Ground (GND) of your external power supply to the Ground (GND) of the S2 Mini.
-* **Why**: Electricity needs a return path. If the grounds are not connected, the communication signals (I2C SDA/SCL, GPIOs) will have no reference point, and the sensors will not work or will send corrupt data.
-
-### 2. Never Connect Two 3.3V Output Pins Together
-* **Rule**: **NEVER** connect the S2 Mini's `3V3` pin to the `3.3V` output pin of your external power supply. 
-* **Why**: Two regulators will "fight" to maintain 3.3V. Even a tiny voltage difference (e.g. 3.29V vs 3.31V) will cause massive current to flow back and forth between them, which will quickly overheat and destroy the regulators on both the S2 Mini and your power supply.
-
-### 3. Wiring Example if using External 3.3V:
-* External Supply `3.3V` $\rightarrow$ Connect to **IMU VCC**, **OLED VCC**, **DHT11 VCC**, **LDR Pin 1**.
-* External Supply `GND` $\rightarrow$ Connect to **S2 Mini GND** AND all sensor grounds.
-* S2 Mini `3V3` $\rightarrow$ **Leave completely disconnected (empty).**
