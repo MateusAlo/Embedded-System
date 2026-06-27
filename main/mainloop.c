@@ -84,7 +84,6 @@ void app_main(void) {
         loop();
         
         // Minimal delay to prevent task watchdog trigger, but our loop 
-        // frequency is completely unpredictable due to the blocking functions.
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }

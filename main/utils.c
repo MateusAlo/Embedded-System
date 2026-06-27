@@ -138,12 +138,9 @@ static int64_t virtual_start_time = 0;
 
 bool imu_read_data(void) {
 #if USE_VIRTUAL_IMU
-    // Simulate a perfect 5Hz physical vibration on the X-axis
-    // Mathematically, the integral of sin(t) is -cos(t) + 1, which gives Velocity a constant DC offset, sending Position to infinity!
-    // Using cos(t) integrates to sin(t), which has no DC offset, meaning Velocity oscillates perfectly around 0.
     float time_sec = (esp_timer_get_time() - virtual_start_time) / 1000000.0f;
     
-    // The Ultimate Proof: A 15-millisecond mechanical shock (10G) that happens 5 times per second (every 200ms).
+    // A 15-millisecond mechanical shock (10G) that happens 5 times per second (every 200ms).
     float time_in_cycle = fmodf(time_sec, 0.2f);
     if (time_in_cycle < 0.015f) { 
         ax = 10.0f; 
@@ -218,7 +215,7 @@ void imu_calculate_dead_reckoning(void) {
     float time_scale = real_dt_sec / 0.01f; // Ratio of real time compared to the math dt
 
     // Apply Velocity Damping (Leaky Integrator) scaled to real time
-    float vel_damping = powf(0.92f, time_scale);
+    float vel_damping = powf(0.95f, time_scale);
     vx *= vel_damping;
     vy *= vel_damping;
     vz *= vel_damping;

@@ -119,7 +119,7 @@ void display_task(void *pvParameters) {
 void serial_task(void *pvParameters) {
     while (1) {
         serial_send_path_data();
-        vTaskDelay(pdMS_TO_TICKS(40)); // Stream data to PC at 2Hz
+        vTaskDelay(pdMS_TO_TICKS(40)); // Stream data to PC at 2Hz initially set to 25Hz
     }
 }
 
